@@ -1,0 +1,28 @@
+---
+title: "Berthomieux Analysis"
+output: html_notebook
+---
+
+
+```{r}
+library(ggplot2)
+library(reshape)
+
+
+# reading the data
+GR <- read.csv("Berthomieux2012/mainTextData/msb201270-df3A.txt",
+               skip=5,header = FALSE)
+GR <- GR[,c(1,6:7)]
+names(GR) <- c("Time","GR_mean","GR_std")
+
+DO <- read.csv("Berthomieux2012/mainTextData/msb201270-df3A.txt",
+               skip = 52,header = FALSE)
+names(DO) <- c("Time","DO")
+
+
+par(mar=c(5,5,4,5))
+with(DO, plot(Time,DO,type="l",col="steelblue",lwd=2.5))
+par(new=TRUE)
+with(GR, plot(Time, GR_mean,axes = FALSE,col="green",type = "l"))
+axis(side=4)
+```
