@@ -1,0 +1,28 @@
+Source data for Figure S7: Variation of the number of plasmids per chromosomal equivalent of DNA (plasmid copy number) measured by means of qPCR on E. coli BW25113 strain transformed with pZEgfp (in blue) or pUA66gfp (in green). See "Materials and methods" for details.
+The quantities have been normalized with respect to the observed plasmid copy number in steady-state exponential growth on glucose and obtained following data analysis from Section S6 of Supplementary Information.
+The means (qPCR_blue_mean) and standard errors (qPCR_blue_std) of relative plasmid copy number for pZEgfp are computed from 4 replicates.
+Time,qPCR_blue_mean,qPCR_blue_std
+[min],
+475.00,1.2080,0.1820
+578.00,1.1737,0.2869
+714.02,0.9018,0.0500
+805.80,1.0000,0.0720
+929.20,1.4637,0.0361
+977.73,1.6854,0.0509
+1017.0,1.8064,0.0709
+1026.0,2.2785,0.0797
+1080.6,2.2366,0.0904
+1171.5,2.8397,0.1595
+1265.4,2.4750,0.0836
+
+
+The means (qPCR_blue_mean) and standard errors (qPCR_blue_std) of relative plasmid copy number for pUA66gfp are computed from 4 replicates.
+Time,qPCR_green_mean,qPCR_green_std
+[min],
+824.83,1.0000,
+906.26,0.9894,0.2112
+958.07,0.9518,0.5365
+983.67,0.9060,0.0425
+1070.4,0.9730,0.0976
+1151.1,1.0086,0.0314
+1241.6,0.8629,0.0556
