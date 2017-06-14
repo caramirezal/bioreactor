@@ -1,0 +1,64 @@
+---
+title: "Modeling gene expression"
+author: "Carlos Ramirez"
+date: "June 12, 2017"
+output: html_document
+---
+
+
+
+####**1. Find a model of gene expression**
+
+Here we analyze the model of Berthomieux et al, 2013 for gene expression. In this formalism gene expression $p(t)$ dynamic is given by the next differential equation.
+
+$$
+\begin{aligned} 
+p(t) = \frac{\partial f(t)}{\partial t} \frac{1}{a(t)} 
+\end{aligned}
+$$
+
+Where $a(t)$ and $f(t)$ are the corrected flourescence and absorbance values defined as follows:
+
+* i) $a(t) = a_{u}(t) - a_{b}(t)$
+
+* ii) $f(t) = f_{u}(t) - \beta(a(t))$
+
+In the first expression $a_{u}(t)$ and $a_{b}(t)$ are raw measured and background absorbance, respectively. Background absorbance is measured in a bacteria strain carrying an empty plasmid vector. 
+
+Finally, the $\beta$ function is an empirical interpolation curve of the map $f_{u}(t) = \beta(a_{u}(t))$. The empirical curve is given by fitting a spline.
+
+####**2. Find data to model**
+
+**2.1. Reading data for modeling**
+
+The next plot shows the required absorbance and flourescence raw data from that reported by Berthomieux et al. 2013.
+
+```{r, echo=FALSE}
+##loading data
+## Absorbance data
+absorbance <- read.csv("Berthomieux2012/S1ArawAbsorbance.csv",header = TRUE)
+names(absorbance) <- c("time","DO")
+## Flourescence data
+flourescence <- read.csv("Berthomieux2012/S1CrawFlourescence.csv",header = TRUE)
+names(flourescence) <- c("time","RFU")
+
+plot(absorbance$time,absorbance$DO,
+     pch=20,col="blue",
+     xlab = "time",
+     ylab = "Absorbance",
+     ylim = c(0.2,1))
+par(new=TRUE)
+plot(flourescence$time,flourescence$RFU,
+      pch=20,col="green",
+     xlab = "",ylab = "",
+     axes = FALSE)
+Axis(side=4)
+
+```
+
+
+**3. Make a preliminar bioreactor like analysis**
+
+Here use $a(t) = a_{u}(t)$ as a first approximation since $a_{b}(t)$ is almost constant and hence $a(t)$ differs from $a_{u}(t)$ as a constant.
+
+The growth rate is the function lamda which is the coefficient of the solution of the linear differential equation.
