@@ -19,13 +19,17 @@ $$
 
 Where $a(t)$ and $f(t)$ are the corrected flourescence and absorbance values defined as follows:
 
-* i) $a(t) = a_{u}(t) - a_{b}(t)$
+$$
+\begin{aligned} 
+a(t) = a_{u}(t) - a_{b}(t) \\
+f(t) = f_{u}(t) - \beta(a(t))
+\end{aligned}
+$$
 
-* ii) $f(t) = f_{u}(t) - \beta(a(t))$
 
 In the first expression $a_{u}(t)$ and $a_{b}(t)$ are raw measured and background absorbance, respectively. Background absorbance is measured in a bacteria strain carrying an empty plasmid vector. 
 
-Finally, the $\beta$ function is an empirical interpolation curve of the map $f_{u}(t) = \beta(a_{u}(t))$. The empirical curve is given by fitting a spline.
+Finally, the $\beta$ function is an empirical interpolation curve of the map $f_{u}(t) = \beta(a_{u}(t))$ of uncorrected and background values. The empirical curve is given by fitting a spline.
 
 ####**2. Find data to model**
 
@@ -42,16 +46,19 @@ names(absorbance) <- c("time","DO")
 flourescence <- read.csv("Berthomieux2012/S1CrawFlourescence.csv",header = TRUE)
 names(flourescence) <- c("time","RFU")
 
+par(mar=c(5,5,5,5))
 plot(absorbance$time,absorbance$DO,
-     pch=20,col="blue",
+     pch=20,col="steelblue",
      xlab = "time",
      ylab = "Absorbance",
-     ylim = c(0.2,1))
+     ylim = c(0.2,1),
+     main = "Berthoumieux et al, 2013 data")
 par(new=TRUE)
 plot(flourescence$time,flourescence$RFU,
       pch=20,col="green",
      xlab = "",ylab = "",
      axes = FALSE)
+mtext(side = 4,"Flourescence", line = 3)
 Axis(side=4)
 
 ```
@@ -59,6 +66,27 @@ Axis(side=4)
 
 **3. Make a preliminar bioreactor like analysis**
 
-Here use $a(t) = a_{u}(t)$ as a first approximation since $a_{b}(t)$ is almost constant and hence $a(t)$ differs from $a_{u}(t)$ as a constant.
+Here use $a(t) = a_{u}(t)$ as a first approximation since $a_{b}(t)$ is almost constant and hence $a(t)$ differs from $a_{u}(t)$ as a constant. 
+
+```{r, echo=TRUE}
+betaFUN <- splinefun(absorbance$DO,flourescence$RFU)
+x <- seq(0.2,0.65,length.out = 1000)
+
+
+plot(absorbance$DO,flourescence$RFU,
+     pch=20,col="steelblue",
+     xlab = "Absorbance",
+     ylab = "Flourescence",
+     main = "Beta interpolation")
+lines(x,betaFUN(x),
+      col="steelblue")
+```
+
+```{r}
+f <- flourescence$RFU - betaFUN(rep(0.01,40))
+plot(absorbance,f)
+
+```
 
 The growth rate is the function lamda which is the coefficient of the solution of the linear differential equation.
+
