@@ -6,10 +6,10 @@ output: html_document
 ---
 
 
-
 ####**1. Find a model of gene expression**
 
 Here we analyze the model of Berthomieux et al, 2013 for gene expression. In this formalism gene expression $p(t)$ dynamic is given by the next differential equation.
+
 
 $$
 \begin{aligned} 
@@ -29,22 +29,29 @@ $$
 
 In the first expression $a_{u}(t)$ and $a_{b}(t)$ are raw measured and background absorbance, respectively. Background absorbance is measured in a bacteria strain carrying an empty plasmid vector. 
 
-Finally, the $\beta$ function is an empirical interpolation curve of the map $f_{u}(t) = \beta(a_{u}(t))$ of uncorrected and background values. The empirical curve is given by fitting a spline.
+Finally, the $\beta$ function is an empirical interpolation curve of the map $f_{u}(t) = \beta(a_{u}(t))$ of uncorrected background values. The empirical curve is given by fitting a spline.
 
 ####**2. Find data to model**
 
 **2.1. Reading data for modeling**
 
-The next plot shows the required absorbance and flourescence raw data from that reported by Berthomieux et al. 2013.
+The next plot shows the required absorbance and flourescence raw data from that reported by Berthomieux et al, 2013.
 
 ```{r, echo=FALSE}
-##loading data
-## Absorbance data
+## Loading data
+## Absorbance
 absorbance <- read.csv("Berthomieux2012/S1ArawAbsorbance.csv",header = TRUE)
 names(absorbance) <- c("time","DO")
-## Flourescence data
+## Absorbance background
+absorbance.b <- read.csv("Berthomieux2012/backgroundAbs.csv",header = TRUE)
+names(absorbance.b) <- c("time","DO")
+
+## Flourescence
 flourescence <- read.csv("Berthomieux2012/S1CrawFlourescence.csv",header = TRUE)
 names(flourescence) <- c("time","RFU")
+## Flourescence background
+flourescence.b <- read.csv("Berthomieux2012/S1CbackgroundFlourescence.csv",header = TRUE)
+names(flourescence.b) <- c("time","RFU")
 
 par(mar=c(5,5,5,5))
 plot(absorbance$time,absorbance$DO,
@@ -66,27 +73,57 @@ Axis(side=4)
 
 **3. Make a preliminar bioreactor like analysis**
 
-Here use $a(t) = a_{u}(t)$ as a first approximation since $a_{b}(t)$ is almost constant and hence $a(t)$ differs from $a_{u}(t)$ as a constant. 
+As stated above corrected absorbance $a(t)$ is obtained by sustracting absorbance background $a_b(t)$ values from a bacteria carryng an empty plasmid vector to the absorbance raw values $a_u(t)$.
 
 ```{r, echo=TRUE}
-betaFUN <- splinefun(absorbance$DO,flourescence$RFU)
-x <- seq(0.2,0.65,length.out = 1000)
+## Absorbance correction
+a <- absorbance$DO - absorbance.b$DO
+```
 
 
-plot(absorbance$DO,flourescence$RFU,
+A calibration curve is obtained by plotting corrected absorbance *versus* primary??? flourescence. 
+
+```{r}
+## spline interpolation
+betaFUN <- splinefun(a,flourescence$RFU)
+```
+
+```{r, echo=FALSE}
+x <- seq(0.2,0.58,length.out = 1000)
+plot(a,flourescence$RFU,
      pch=20,col="steelblue",
-     xlab = "Absorbance",
+     xlab = "Corrected absorbance",
      ylab = "Flourescence",
      main = "Beta interpolation")
 lines(x,betaFUN(x),
       col="steelblue")
 ```
 
-```{r}
-f <- flourescence$RFU - betaFUN(rep(0.01,40))
-plot(absorbance,f)
+Corrected flourescence is then calculated by sustracting the beta interpolation evaluated in absorbance corrected??? values.
 
+```{r}
+f <- flourescence$RFU - betaFUN(absorbance.b$DO)
 ```
+
+```{r, echo=FALSE}
+plot(absorbance.b$time,f[1:40],
+     pch=20, col="steelblue",
+     xlab = "Time",
+     main = "Corrected Flourescence",
+     ylab = "Flourescence")
+lines(spline(absorbance.b$time,f[1:40]))
+f.loess <- loess.smooth(absorbance.b$time,f[1:40])
+with(f.loess,lines(x,y,col="green"))
+```
+
+```{r, echo=FALSE}
+df <- diff(f.loess$y)/diff(f.loess$x)
+plot(f.loess$x,df[1:length(f.loess$x)]*(1/a[1:length(f.loess$x)]),
+     pch=20,col="green",
+     xlab = "Time",
+     ylab = "Promoter expression",
+     main = "Gene expression")
+``` 
 
 The growth rate is the function lamda which is the coefficient of the solution of the linear differential equation.
 
