@@ -3,12 +3,14 @@ title: "Modeling gene expression"
 author: "Carlos Ramirez"
 date: "June 12, 2017"
 output: html_document
+header-includes:
+ - \usepackage{color}
 ---
 
 
 ####**1. Find a model of gene expression**
 
-Here we analyze the model of Berthomieux et al, 2013 for gene expression. In this formalism gene expression $p(t)$ dynamic is given by the next differential equation.
+Here, I analyzed the model of [Berthomieux et al, 2013](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3564261/#S1) for gene expression. In this formalism, gene expression $p(t)$ dynamic is given by the next differential equation.
 
 
 $$
@@ -35,33 +37,33 @@ Finally, the $\beta$ function is an empirical interpolation curve of the map $f_
 
 **2.1. Reading data for modeling**
 
-The next plot shows the required absorbance and flourescence raw data from that reported by Berthomieux et al, 2013.
+The first initial observation is that DO and RFU raw data are not provided and hence reproducibility of the study is limited. Hence, I extracted the data from the raw data plotted in Figure S1 of the [suplementary file](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3564261/bin/msb201270-s1.pdf) following [this method](https://rdataviz.wordpress.com/2010/03/05/getting-data-from-an-image-introductory-post/) as provided in [this code](https://github.com/caramirezal/bioreactor/blob/master/hackImage.R). The next plot shows the absorbance (green points) and flourescence (red points) raw values so obtained.
 
 ```{r, echo=FALSE}
 ## Loading data
 ## Absorbance
-absorbance <- read.csv("Berthomieux2012/S1ArawAbsorbance.csv",header = TRUE)
-names(absorbance) <- c("time","DO")
+absorbance.u <- read.csv("Berthomieux2012/S1ArawAbsorbance.csv",header = TRUE)
+names(absorbance.u) <- c("time","DO")
 ## Absorbance background
 absorbance.b <- read.csv("Berthomieux2012/backgroundAbs.csv",header = TRUE)
 names(absorbance.b) <- c("time","DO")
 
 ## Flourescence
-flourescence <- read.csv("Berthomieux2012/S1CrawFlourescence.csv",header = TRUE)
-names(flourescence) <- c("time","RFU")
+flourescence.u <- read.csv("Berthomieux2012/S1CrawFlourescence.csv",header = TRUE)
+names(flourescence.u) <- c("time","RFU")
 ## Flourescence background
 flourescence.b <- read.csv("Berthomieux2012/S1CbackgroundFlourescence.csv",header = TRUE)
 names(flourescence.b) <- c("time","RFU")
 
 par(mar=c(5,5,5,5))
-plot(absorbance$time,absorbance$DO,
+plot(absorbance.u$time,absorbance.u$DO,
      pch=20,col="steelblue",
      xlab = "time",
      ylab = "Absorbance",
      ylim = c(0.2,1),
      main = "Berthoumieux et al, 2013 data")
 par(new=TRUE)
-plot(flourescence$time,flourescence$RFU,
+plot(flourescence.u$time,flourescence.u$RFU,
       pch=20,col="green",
      xlab = "",ylab = "",
      axes = FALSE)
@@ -71,26 +73,26 @@ Axis(side=4)
 ```
 
 
-**3. Make a preliminar bioreactor like analysis**
+####**3. Make a preliminar bioreactor like analysis**
 
-As stated above corrected absorbance $a(t)$ is obtained by sustracting absorbance background $a_b(t)$ values from a bacteria carryng an empty plasmid vector to the absorbance raw values $a_u(t)$.
+As stated above, corrected absorbance $a(t)$ is obtained by sustracting absorbance background $a_b(t)$ values (that is the data obtained from a bacteria carrying an empty plasmid vector) from uncorrected absorbance values $a_u(t)$.
 
 ```{r, echo=TRUE}
 ## Absorbance correction
-a <- absorbance$DO - absorbance.b$DO
+a <- absorbance.u$DO - absorbance.b$DO
 ```
 
 
-A calibration curve is obtained by plotting corrected absorbance *versus* primary??? flourescence. 
+A calibration curve is obtained by plotting uncorrected absorbance *versus* uncorrected flourescence and then fitting a spline function which defines $\beta$ in Equation 3. Maybe, it should be more convenient to take a calibration curve $b$ as the map $f_b(t) = b(a_b(t))$. However, this function seems to be very peaked. They may chose $\beta$ because this function was differentiable.
 
 ```{r}
 ## spline interpolation
-betaFUN <- splinefun(a,flourescence$RFU)
+betaFUN <- splinefun(absorbance.u$DO,flourescence.u$RFU)
 ```
 
 ```{r, echo=FALSE}
-x <- seq(0.2,0.58,length.out = 1000)
-plot(a,flourescence$RFU,
+x <- seq(0.2,0.65,length.out = 1000)
+plot(absorbance.u$DO,flourescence.u$RFU,
      pch=20,col="steelblue",
      xlab = "Corrected absorbance",
      ylab = "Flourescence",
@@ -99,11 +101,20 @@ lines(x,betaFUN(x),
       col="steelblue")
 ```
 
-Corrected flourescence is then calculated by sustracting the beta interpolation evaluated in absorbance corrected??? values.
+
+They mentioned that corrected flourescence $f$ (shown as blue points in the next plot) is calculated by sustracting from primary flourescence the $\beta$ interpolation evaluated in absorbance $\color{red}{corrected}$ values. However, I did not observe the curve they obtained for $f$. Hence, as the goal is to substract the noise added by the OD background values I used here:
+
+$f(t) = f_u(t) - \beta(a_b(t))$
+
+Which gives a similar increasing behavior as they reported (which is not observed using $a(t)$ or $a_u(t)$). 
+
+In the original work a spline was fitted and that smooth function was used as $f$ (shown as the black curve in the next plot). However, in my hands an spline was not smooth enough and then I used a loess curve as a better approximation (shown as a green curve in the plot). It is important to note that this discrepancy could be derived by the differences in the values obtained by the images and the actual data they used. 
 
 ```{r}
-f <- flourescence$RFU - betaFUN(absorbance.b$DO)
+f <- flourescence.u$RFU - betaFUN(absorbance.b$DO)
 ```
+
+
 
 ```{r, echo=FALSE}
 plot(absorbance.b$time,f[1:40],
@@ -116,6 +127,8 @@ f.loess <- loess.smooth(absorbance.b$time,f[1:40])
 with(f.loess,lines(x,y,col="green"))
 ```
 
+Finally, gene expression is obtained by applying Equation 1 to the so obtained $a$ and $f$ function values. Here, $f$ was taken as the loess function fitted to the $f$ empirical values.
+
 ```{r, echo=FALSE}
 df <- diff(f.loess$y)/diff(f.loess$x)
 plot(f.loess$x,df[1:length(f.loess$x)]*(1/a[1:length(f.loess$x)]),
@@ -125,5 +138,7 @@ plot(f.loess$x,df[1:length(f.loess$x)]*(1/a[1:length(f.loess$x)]),
      main = "Gene expression")
 ``` 
 
-The growth rate is the function lamda which is the coefficient of the solution of the linear differential equation.
+####**4. Conclusions**
+
+Here, I analyzed the model and data as published in [Berthomieux et al, 2013](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3564261/#S1). I found difficulties in reproducibility caused by the lack of raw data available. However, by mining data from figures I found qualitative agreement with their results. Discrepancies were found the third Equation for calculating the corrected fluorescence. Loess function was found to be another possibility for fitting calibration curves. Finally, this formalism could be used as a model for gene expression which depends only in OD and RFU values.   
 
